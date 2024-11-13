@@ -1,9 +1,13 @@
+import os
 import requests
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 # Replace with your Telegram bot token
-BOT_TOKEN = '7550771021:AAEugqwyyW_yl0k5aBLl7PwUcLmySwZuFtM'
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+
+# Webhook configuration
+PORT = int(os.environ.get('PORT', 8443))  # Default to port 8443 or use the PORT environment variable
 
 def start(update: Update, context: CallbackContext) -> None:
     """Send a welcome message when the /start command is issued."""
@@ -46,8 +50,15 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(MessageHandler(Filters.document | Filters.video | Filters.photo, file_handler))
 
-    # Start polling for updates
-    updater.start_polling()
+    # Set webhook URL using the specific Render app URL
+    webhook_url = f"https://file-to-link-by-telegram.onrender.com/{BOT_TOKEN}"
+    updater.start_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=BOT_TOKEN
+    )
+    updater.bot.set_webhook(webhook_url)
+    print(f"Webhook URL set to {webhook_url}")
     updater.idle()
 
 if __name__ == '__main__':
