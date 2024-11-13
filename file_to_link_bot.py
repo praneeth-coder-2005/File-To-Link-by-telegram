@@ -25,7 +25,7 @@ def file_handler(update: Update, context: CallbackContext) -> None:
     file_id = file.file_id
 
     # Construct the Render-based download link
-    download_link = f"https://file-to-link-by-telegram.onrender.com/download/{file_id}"
+    download_link = f"{RENDER_APP_URL}/download/{file_id}"
 
     # Send the Render-based download link to the user
     update.message.reply_text(f"Here is your download link:\n{download_link}")
