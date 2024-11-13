@@ -3,11 +3,12 @@ import requests
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-# Replace with your Telegram bot token
+# Retrieve bot token from environment variable
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 # Webhook configuration
-PORT = int(os.environ.get('PORT', 8443))  # Default to port 8443 or use the PORT environment variable
+RENDER_APP_URL = "https://file-to-link-by-telegram.onrender.com"  # Your Render app URL
+PORT = 443  # Explicitly set to port 443, which Telegram accepts for webhooks
 
 def start(update: Update, context: CallbackContext) -> None:
     """Send a welcome message when the /start command is issued."""
@@ -37,7 +38,6 @@ def file_handler(update: Update, context: CallbackContext) -> None:
 
 def construct_file_url(bot_token, file_id):
     """Construct a download URL directly for a given file ID."""
-    # Use the file ID directly in the URL
     download_url = f"https://api.telegram.org/file/bot{bot_token}/{file_id}"
     return download_url
 
@@ -50,11 +50,11 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(MessageHandler(Filters.document | Filters.video | Filters.photo, file_handler))
 
-    # Set webhook URL using the specific Render app URL
-    webhook_url = f"https://file-to-link-by-telegram.onrender.com/{BOT_TOKEN}"
+    # Set webhook URL using the Render app URL on port 443
+    webhook_url = f"{RENDER_APP_URL}/{BOT_TOKEN}"
     updater.start_webhook(
         listen="0.0.0.0",
-        port=PORT,
+        port=PORT,  # Set to 443
         url_path=BOT_TOKEN
     )
     updater.bot.set_webhook(webhook_url)
