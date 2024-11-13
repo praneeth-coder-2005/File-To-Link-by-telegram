@@ -3,7 +3,7 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 # Replace with your Telegram bot token
-BOT_TOKEN = 'YOUR_BOT_TOKEN'
+BOT_TOKEN = '7550771021:AAEugqwyyW_yl0k5aBLl7PwUcLmySwZuFtM'
 
 def start(update: Update, context: CallbackContext) -> None:
     """Send a welcome message when the /start command is issued."""
