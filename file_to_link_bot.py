@@ -5,10 +5,6 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 # Retrieve bot token from environment variable
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
-# Webhook configuration
-RENDER_APP_URL = "https://file-to-link-by-telegram.onrender.com"  # Your Render app URL
-PORT = 443  # Explicitly set to port 443, which Telegram requires for secure webhooks
-
 def start(update: Update, context: CallbackContext) -> None:
     """Send a welcome message when the /start command is issued."""
     update.message.reply_text("Hello! Send me a file, and I'll generate a download link for you.")
@@ -49,14 +45,11 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(MessageHandler(Filters.document | Filters.video | Filters.photo, file_handler))
 
-    # Set webhook URL using the Render app URL on port 443
-    webhook_url = f"https://file-to-link-by-telegram.onrender.com/7550771021:AAEugqwyyW_yl0k5aBLl7PwUcLmySwZuFtM"
-    updater.start_webhook(
-        port=PORT,         # Use port 443
-        url_path=BOT_TOKEN
-    )
-    updater.bot.set_webhook(webhook_url)
-    print(f"Webhook URL set to {webhook_url}")
+    # Start polling instead of using a webhook
+    updater.start_polling()
+    print("Bot is running with polling...")
+
+    # Idle to keep the bot running
     updater.idle()
 
 if __name__ == '__main__':
