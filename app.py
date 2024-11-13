@@ -1,37 +1,50 @@
-from flask import Flask, redirect, jsonify
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackContext, filters
 import os
-import requests
+import logging
 
-app = Flask(__name__)
+# Retrieve bot token from environment variables
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 
-# Retrieve bot token and channel/chat ID (use your bot's chat ID for testing)
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-BOT_CHAT_ID = os.getenv("BOT_CHAT_ID")  # The chat ID where the bot will send messages
+# Set up logging for debugging
+logging.basicConfig(level=logging.INFO)
 
-BOT_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+async def start(update: Update, context: CallbackContext) -> None:
+    """Send a welcome message when the /start command is issued."""
+    await update.message.reply_text("Hello! Send me a file, and I'll provide a link for retrieval.")
 
-@app.route('/redirect/<file_id>', methods=['GET'])
-def redirect_to_bot(file_id):
-    """Send a request to the bot to retrieve the file for the user."""
-    # Send a message to the bot's chat with the file ID
-    data = {
-        "chat_id": BOT_CHAT_ID,
-        "text": f"/get_file_{file_id}"
-    }
-    
-    # Send the command to the bot to initiate file retrieval
-    response = requests.post(BOT_API_URL, json=data)
-    
-    # Check if the request was successful
-    if response.status_code == 200:
-        return jsonify({"message": "Request sent to the bot. Check the bot messages for your file."})
-    else:
-        return jsonify({"error": "Failed to send request to the bot."}), 500
+async def file_handler(update: Update, context: CallbackContext) -> None:
+    """Handle received files and provide the Render link for retrieval."""
+    file = update.message.document or update.message.video or update.message.photo[-1]
+    if not file:
+        await update.message.reply_text("Please send a file.")
+        return
 
-@app.route('/', methods=['GET'])
-def home():
-    """Home route for testing."""
-    return "Welcome to the Telegram Bot File Redirect Service."
+    # Store the file_id and give a Render-based URL for retrieval
+    file_id = file.file_id
+    render_link = f"https://file-to-link-by-telegram.onrender.com/redirect/{file_id}"
+    await update.message.reply_text(f"Access your file [here]({render_link})", parse_mode="Markdown")
+
+async def retrieve_file(update: Update, context: CallbackContext) -> None:
+    """Retrieve and send the file based on the command."""
+    # Extract file_id from the command
+    command = update.message.text
+    file_id = command.split('_')[-1]
+
+    # Send the file back to the user
+    await context.bot.send_document(chat_id=update.message.chat_id, document=file_id)
+
+def main():
+    # Initialize the bot application
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Register command and message handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, file_handler))
+    application.add_handler(MessageHandler(filters.Regex(r"^/get_file_"), retrieve_file))  # Listen for file retrieval
+
+    # Start polling
+    application.run_polling()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=443)
+    main()
