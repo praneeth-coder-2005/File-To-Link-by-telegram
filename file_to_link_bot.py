@@ -36,7 +36,8 @@ def main():
 
     # Register command and file handlers
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.Document.ALL | filters.Video.ALL | filters.Photo.ALL, file_handler))
+    # Use filters.ALL to handle any document, photo, or video
+    application.add_handler(MessageHandler(filters.ALL, file_handler))
 
     # Start the bot
     application.run_polling()
