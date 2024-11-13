@@ -8,8 +8,8 @@ app = Flask(__name__)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 def get_telegram_file_link(file_id):
-    """Function to get the Telegram file download link using file_id."""
-    # Step 1: Get file path using Telegram's getFile API
+    """Fetch the Telegram file download link using file_id."""
+    # Use Telegram's getFile API to get the file path
     file_info_url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}"
     response = requests.get(file_info_url)
     
@@ -17,12 +17,16 @@ def get_telegram_file_link(file_id):
         # Extract file path from response
         file_path = response.json()['result']['file_path']
         
-        # Step 2: Construct the download URL
+        # Construct the download URL with the bot token
         download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
         return download_url
     else:
-        # Return None if there's an error
-        return None
+        return None  # Return None if there's an error
+
+@app.route('/', methods=['GET'])
+def index():
+    """Root endpoint to confirm the app is running."""
+    return jsonify({"message": "Welcome to the Telegram File Redirect Service. Use /download/<file_id> to access files."}), 200
 
 @app.route('/download/<file_id>', methods=['GET'])
 def download_file(file_id):
@@ -32,7 +36,6 @@ def download_file(file_id):
         # Redirect the user to the Telegram download link
         return redirect(download_link, code=302)
     else:
-        # If unable to retrieve, return an error response
         return jsonify({"error": "File not found or unable to retrieve"}), 404
 
 if __name__ == '__main__':
