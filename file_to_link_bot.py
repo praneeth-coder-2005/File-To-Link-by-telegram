@@ -3,22 +3,23 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 import os
 import logging
 
-# Retrieve bot token from environment variables
+# Retrieve bot token and channel ID from environment variables
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHANNEL_ID = os.getenv('CHANNEL_ID')  # Set your channel ID here
 
-# Base URL for the Render app, where files can be downloaded
-RENDER_APP_URL = "https://file-to-link-by-telegram.onrender.com"  # Your Render app URL
+# Set up Render webhook URL
+RENDER_APP_URL = "https://file-to-link-by-telegram.onrender.com"  # Replace with your actual Render URL
 WEBHOOK_URL = f"{RENDER_APP_URL}/webhook/{BOT_TOKEN}"  # Webhook URL for Telegram to send updates
 
-# Set up logging for better debugging and visibility
+# Set up logging for debugging
 logging.basicConfig(level=logging.INFO)
 
 async def start(update: Update, context: CallbackContext) -> None:
     """Send a welcome message when the /start command is issued."""
-    await update.message.reply_text("Hello! Send me a file, and I'll generate a download link for you.")
+    await update.message.reply_text("Hello! Send me a file, and I'll store it permanently in our channel.")
 
 async def file_handler(update: Update, context: CallbackContext) -> None:
-    """Handle received files and generate a download link."""
+    """Handle received files and forward them to a storage channel."""
     # Get the file object (this could be a document, photo, or video)
     file = update.message.document or update.message.video or update.message.photo[-1]
 
@@ -26,14 +27,16 @@ async def file_handler(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text("Please send a file.")
         return
 
-    # Retrieve the file ID for generating the Render-based download link
-    file_id = file.file_id
+    # Forward the file to the channel for permanent storage
+    forwarded_message = await context.bot.forward_message(
+        chat_id=CHANNEL_ID,
+        from_chat_id=update.message.chat_id,
+        message_id=update.message.message_id
+    )
 
-    # Construct the Render-based download link
-    download_link = f"{RENDER_APP_URL}/download/{file_id}"
-
-    # Send the Render-based download link to the user
-    await update.message.reply_text(f"Here is your download link:\n{download_link}")
+    # Provide the user with the link to access the stored file in the channel
+    channel_link = f"https://t.me/c/{CHANNEL_ID.replace('-100', '')}/{forwarded_message.message_id}"
+    await update.message.reply_text(f"Your file has been stored permanently. Access it [here]({channel_link}).", parse_mode="Markdown")
 
 def main():
     # Initialize the bot application
