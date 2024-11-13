@@ -1,13 +1,17 @@
-import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
-import asyncio
+import os
+import logging
 
 # Retrieve bot token from environment variables
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 # Base URL for the Render app, where files can be downloaded
 RENDER_APP_URL = "https://file-to-link-by-telegram.onrender.com"  # Your Render app URL
+WEBHOOK_URL = f"{RENDER_APP_URL}/webhook/{BOT_TOKEN}"  # Webhook URL for Telegram to send updates
+
+# Set up logging for better debugging and visibility
+logging.basicConfig(level=logging.INFO)
 
 async def start(update: Update, context: CallbackContext) -> None:
     """Send a welcome message when the /start command is issued."""
@@ -39,8 +43,13 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.ALL, file_handler))
 
-    # Start polling with a longer timeout for long-polling
-    application.run_polling(timeout=30, poll_interval=0.5)
+    # Set the webhook for the application
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=443,
+        url_path=f"webhook/{BOT_TOKEN}",
+        webhook_url=WEBHOOK_URL
+    )
 
 if __name__ == '__main__':
     main()
