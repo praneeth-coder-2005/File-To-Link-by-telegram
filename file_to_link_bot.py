@@ -1,33 +1,9 @@
 import os
-import sys
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackContext
-import atexit
+import asyncio
 
-# Path for lock file to prevent multiple instances
-LOCK_FILE_PATH = "/tmp/bot_lock_file"
-
-def check_and_create_lock():
-    """Checks for an existing lock file and creates one if it does not exist."""
-    if os.path.exists(LOCK_FILE_PATH):
-        print("Another instance is running. Exiting to prevent conflict.")
-        sys.exit(0)  # Exit if another instance is running
-    else:
-        with open(LOCK_FILE_PATH, 'w') as lock_file:
-            lock_file.write(str(os.getpid()))  # Write current process ID to lock file
-
-def remove_lock_file():
-    """Removes the lock file on exit."""
-    if os.path.exists(LOCK_FILE_PATH):
-        os.remove(LOCK_FILE_PATH)
-
-# Register the cleanup function to run on exit
-atexit.register(remove_lock_file)
-
-# Check and create lock at the start of the script
-check_and_create_lock()
-
-# Retrieve bot token from environment variables for security
+# Retrieve bot token from environment variables
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 # Base URL for the Render app, where files can be downloaded
@@ -61,11 +37,10 @@ def main():
 
     # Register command and file handlers
     application.add_handler(CommandHandler("start", start))
-    # Use filters.ALL to handle any document, photo, or video
     application.add_handler(MessageHandler(filters.ALL, file_handler))
 
-    # Start polling to listen for messages
-    application.run_polling()
+    # Start polling with a longer timeout for long-polling
+    application.run_polling(timeout=30, poll_interval=0.5)
 
 if __name__ == '__main__':
     main()
