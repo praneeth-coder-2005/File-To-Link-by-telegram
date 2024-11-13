@@ -28,6 +28,15 @@ async def file_handler(update: Update, context: CallbackContext) -> None:
     retrieval_link = f"{RENDER_APP_URL}/redirect/{file_id}"
     await update.message.reply_text(f"Your file has been stored. Access it [here]({retrieval_link})", parse_mode="Markdown")
 
+def clear_webhook():
+    """Clear any existing webhook to prevent conflicts."""
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook"
+    response = requests.get(url)
+    if response.status_code == 200:
+        logging.info("Existing webhook cleared successfully.")
+    else:
+        logging.error(f"Failed to clear existing webhook: {response.text}")
+
 def set_webhook():
     """Set the webhook for the bot."""
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook"
@@ -39,7 +48,9 @@ def set_webhook():
         logging.error(f"Failed to set webhook: {response.text}")
 
 def main():
-    # Set the webhook on startup
+    # Clear any existing webhook to ensure only one instance is active
+    clear_webhook()
+    # Set the new webhook
     set_webhook()
 
     # Initialize the bot application
@@ -49,8 +60,13 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.ALL, file_handler))
 
-    # Start the bot (use polling only as a fallback)
-    application.run_polling()
+    # Run only webhook, no polling fallback
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=443,
+        url_path=f"webhook/{BOT_TOKEN}",
+        webhook_url=WEBHOOK_URL
+    )
 
 if __name__ == '__main__':
     main()
